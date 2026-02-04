@@ -22,30 +22,42 @@ jobs:
             exit 1
           fi
 
-      - name: Build package inside Arch Linux container
+      - name: Build packages inside Arch Linux container
         env:
-          PKGDIR: packaging/aur/rustscan
+          PKGROOT: packaging/aur
         run: |
-          docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/${PKGDIR} archlinux:latest /bin/bash -lc '
+          docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace -e PKGROOT=/workspace/packaging/aur archlinux:latest /bin/bash -lc '
             set -e
-            pacman -Sy --noconfirm --needed base-devel git curl --noprogressbar || true
-            # Make sure a binary is present for the binary-first PKGBUILD
-            if [[ -f "rustscan-2.4.1-linux-amd64" && ! -f rustscan ]]; then
-              cp rustscan-2.4.1-linux-amd64 rustscan
-              chmod +x rustscan
-            fi
-            # Trust PKGBUILD and build package
-            makepkg -f --noconfirm --syncdeps --noprogressbar
-            ls -lah .
+            pacman -Sy --noconfirm --needed base-devel git curl unzip --noprogressbar || true
+            for pkgdir in $PKGROOT/*; do
+              if [ -f "$pkgdir/PKGBUILD" ]; then
+                echo "Building $pkgdir"
+                cd "$pkgdir"
+
+                # Copy common local artifacts to expected filenames (rustscan use-case)
+                for f in *-linux-amd64 *-amd64.tar.gz *.zip 2>/dev/null; do
+                  [ -f "$f" ] || continue
+                  case "$f" in
+                    *rustscan*|*-linux-amd64) cp "$f" rustscan 2>/dev/null || true ;;
+                    *) echo "Found artifact $f; leaving as-is" ;;
+                  esac
+                done
+                chmod +x rustscan 2>/dev/null || true
+
+                # Build package (ignore failures so one package doesn't break the whole run)
+                makepkg -f --noconfirm --syncdeps --noprogressbar || true
+                cd /workspace
+              fi
+            done
+            ls -R $PKGROOT || true
           '
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rustscan-packages
+          name: aur-packages
           path: |
-            packaging/aur/rustscan/*.pkg.tar.zst
-            packaging/aur/rustscan/*.pkg.tar.xz
+            packaging/aur/*/*.pkg.tar.*
 
       - name: Show built files
-        run: ls -lah packaging/aur/rustscan || true
+        run: ls -lah packaging/aur || true
