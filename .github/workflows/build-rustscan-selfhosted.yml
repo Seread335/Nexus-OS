@@ -1,0 +1,51 @@
+name: Build RustScan (self-hosted)
+
+on:
+  push:
+    paths:
+      - 'packaging/aur/rustscan/**'
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    name: Build RustScan on self-hosted runner
+    runs-on: [self-hosted, linux, x64]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure Docker is available
+        run: |
+          if ! command -v docker >/dev/null 2>&1; then
+            echo "Docker is required on the self-hosted runner to run the Arch build container." >&2
+            exit 1
+          fi
+
+      - name: Build package inside Arch Linux container
+        env:
+          PKGDIR: packaging/aur/rustscan
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/workspace" -w /workspace/${PKGDIR} archlinux:latest /bin/bash -lc '
+            set -e
+            pacman -Sy --noconfirm --needed base-devel git curl --noprogressbar || true
+            # Make sure a binary is present for the binary-first PKGBUILD
+            if [[ -f "rustscan-2.4.1-linux-amd64" && ! -f rustscan ]]; then
+              cp rustscan-2.4.1-linux-amd64 rustscan
+              chmod +x rustscan
+            fi
+            # Trust PKGBUILD and build package
+            makepkg -f --noconfirm --syncdeps --noprogressbar
+            ls -lah .
+          '
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustscan-packages
+          path: |
+            packaging/aur/rustscan/*.pkg.tar.zst
+            packaging/aur/rustscan/*.pkg.tar.xz
+
+      - name: Show built files
+        run: ls -lah packaging/aur/rustscan || true
