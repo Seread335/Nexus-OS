@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  nexus-build:
+    image: archlinux:latest
+    container_name: nexus-build
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - nexus-pacman-cache:/var/cache/pacman/pkg
+    command: /bin/bash -lc '
+      set -e
+      pacman -Sy --noconfirm --needed base-devel git curl wget unzip p7zip 2>&1 | tail -5
+      echo "Build environment ready. Run builds via scripts/build_aur_local.sh"
+    '
+    environment:
+      - LANG=C.UTF-8
+
+volumes:
+  nexus-pacman-cache:
+    driver: local
