@@ -3,7 +3,7 @@ name: Build RustScan (self-hosted)
 on:
   push:
     paths:
-      - 'packaging/aur/rustscan/**'
+      - 'packaging/aur/**'
   workflow_dispatch: {}
 
 jobs:
@@ -52,31 +52,62 @@ jobs:
             ls -R $PKGROOT || true
           '
 
-      - name: Smoke tests for built packages
+      - name: Smoke tests for built packages (package-specific checks)
         run: |
           set -e
-          echo "Running simple smoke-tests on packaged artifacts"
+          echo "Running package-specific smoke-tests on packaged artifacts"
+          # helper to run a command if binary exists
+          try_run() {
+            local exe="$1"; shift
+            if [ -x "$exe" ]; then
+              echo "Running: $exe $*"
+              ("$exe" "$@") >/dev/null 2>&1 && echo "OK: $exe" || echo "WARN: $exe returned non-zero"
+            else
+              echo "Not present or not executable: $exe"
+            fi
+          }
+
           for pkgdir in packaging/aur/*; do
             pkgfile=$(ls -1 "$pkgdir"/*.pkg.tar.* 2>/dev/null | head -n1 || true)
             if [ -z "$pkgfile" ]; then
               echo "No built package for $pkgdir"
               continue
             fi
-            echo "Testing $pkgfile"
+            echo "\n=== Testing $pkgfile ==="
             tmp=$(mktemp -d)
             bsdtar -xf "$pkgfile" -C "$tmp"
 
-            # Try to find executables in /usr/bin and /opt and run --version where possible
+            # Specific checks per known packages
+            if [ -x "$tmp/usr/bin/rustscan" ]; then
+              try_run "$tmp/usr/bin/rustscan" --version
+            fi
+            if [ -x "$tmp/usr/bin/hashcat" ]; then
+              try_run "$tmp/usr/bin/hashcat" --version
+            fi
+            if [ -x "$tmp/usr/bin/ophcrack" ]; then
+              try_run "$tmp/usr/bin/ophcrack" --help
+            fi
+            # Ghidra: do not launch GUI; just check files exist under /opt
+            if ls "$tmp/opt/ghidra-"* >/dev/null 2>&1; then
+              echo "OK: Ghidra files present in /opt"
+            elif [ -x "$tmp/usr/bin/ghidra" ]; then
+              echo "OK: Ghidra wrapper present"
+            fi
+
+            # Generic fallback: find executables and try --version or run
             find "$tmp" -type f -perm /111 | while read -r exe; do
-              # Prefer running simple --version checks where supported
-              echo "Found executable: $exe"
-              ("$exe" --version) >/dev/null 2>&1 && echo "OK: $exe --version" && continue
-              # If --version fails, try running without args for a quick exit code check
-              ("$exe") >/dev/null 2>&1 && echo "OK: $exe ran" || echo "Warning: $exe failed to run"
+              case "$(basename "$exe")" in
+                rustscan|hashcat|ophcrack|ghidra) ;;
+                *) 
+                  ("$exe" --version) >/dev/null 2>&1 && echo "OK: $(basename "$exe") --version" || (
+                    ("$exe") >/dev/null 2>&1 && echo "OK: $(basename "$exe") ran" || echo "WARN: $(basename "$exe") failed")
+                  ;;
+              esac
             done
 
             rm -rf "$tmp"
           done
+
 
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
