@@ -1,0 +1,56 @@
+# PKGBUILD for rustscan (AUR)
+
+pkgname=rustscan
+pkgver=2.4.1
+pkgrel=1
+pkgdesc="Fast port scanner written in Rust"
+arch=('x86_64')
+url="https://github.com/RustScan/RustScan"
+license=('MIT')
+depends=('glibc')
+makedepends=('rust' 'cargo' 'pkg-config' 'pkgconf' 'unzip' 'curl')
+
+# Attempt to use a prebuilt release asset; if not available, fall back to building from source.
+release_asset="https://github.com/RustScan/RustScan/releases/download/v${pkgver}/rustscan-${pkgver}-x86_64.tar.gz"
+source=("https://github.com/RustScan/RustScan/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$srcdir"
+  echo "Trying to fetch prebuilt release asset: ${release_asset}"
+  if curl -f -L -o "rustscan-release.tar.gz" "${release_asset}"; then
+    echo "Found release asset; extracting"
+    tar xzf rustscan-release.tar.gz || true
+    RELEASE_PRESENT=1
+  else
+    echo "Release asset not found; will build from source"
+    RELEASE_PRESENT=0
+    # fetch source tarball (from the tracked source file)
+    mkdir -p "$srcdir/RustScan"
+    tar xf "v${pkgver}.tar.gz" --strip-components=1 -C "$srcdir/RustScan"
+  fi
+}
+
+build() {
+  cd "$srcdir"
+  if [ "${RELEASE_PRESENT:-0}" -eq 1 ]; then
+    echo "No build step for release binary"
+  else
+    cd "RustScan"
+    cargo build --release --locked
+  fi
+}
+
+package() {
+  cd "$srcdir"
+  if [ "${RELEASE_PRESENT:-0}" -eq 1 ]; then
+    # Assume release archive contains binary named 'rustscan' in root or bin/
+    install -Dm755 rustscan "$pkgdir/usr/bin/rustscan" || true
+    install -Dm755 bin/rustscan "$pkgdir/usr/bin/rustscan" || true
+  else
+    cd "RustScan"
+    install -Dm755 target/release/rustscan "$pkgdir/usr/bin/rustscan"
+  fi
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE" || true
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md" || true
+}

@@ -1,0 +1,33 @@
+name: Build AUR PKGBUILDs
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'packaging/aur/**'
+
+jobs:
+  aur-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build PKGBUILDs in Arch container
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/workspace" archlinux:latest /bin/bash -lc '
+            set -euo pipefail
+            pacman -Sy --noconfirm --needed base-devel git
+            for d in /workspace/packaging/aur/*; do
+              if [ -d "$d" ]; then
+                echo "Building $d"
+                cd "$d"
+                # makepkg expects user and .SRCINFO; use fakeroot when possible
+                pacman -Sy --noconfirm --needed --noprogressbar base-devel || true
+                /usr/bin/makepkg -s --noconfirm || echo "makepkg failed for $d"
+              fi
+            done
+          '

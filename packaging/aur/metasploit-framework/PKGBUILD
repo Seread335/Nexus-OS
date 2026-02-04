@@ -1,0 +1,20 @@
+# PKGBUILD placeholder for metasploit-framework
+# This is a template placeholder. Fill with upstream source, checksums, and build steps.
+
+pkgname=metasploit-framework
+pkgver=6.3.0
+pkgrel=1
+pkgdesc="Metasploit Framework"
+arch=('x86_64')
+url="https://metasploit.com/"
+license=('BSD')
+source=("https://example.com/metasploit.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  echo "Implement build steps (gem bundle, dependencies, etc.)"
+}
+
+package() {
+  echo "Install files into package dir"
+}

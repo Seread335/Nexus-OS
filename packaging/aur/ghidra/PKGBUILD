@@ -1,0 +1,30 @@
+# PKGBUILD for Ghidra (AUR)
+
+pkgname=ghidra
+pkgver=10.2.2
+pkgrel=1
+pkgdesc="Ghidra Reverse Engineering Framework (binary distribution)"
+arch=('x86_64')
+url="https://ghidra-sre.org/"
+license=('GPL')
+depends=('jdk-openjdk')
+source=("https://ghidra-sre.org/ghidra_${pkgver}.zip")
+sha256sums=('SKIP')
+
+prepare() {
+  mkdir -p "$srcdir/ghidra"
+  unzip -q "${srcdir}/ghidra_${pkgver}.zip" -d "$srcdir/ghidra"
+}
+
+build() {
+  # No compile step; packaged as binary
+  return 0
+}
+
+package() {
+  local _dir="$srcdir/ghidra/ghidra_${pkgver}"
+  install -Dm755 "${_dir}/ghidraRun" "$pkgdir/usr/bin/ghidra"
+  cp -a "${_dir}" "$pkgdir/usr/share/ghidra/"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/${pkgname}/LICENSE"
+  install -Dm644 README.TXT "$pkgdir/usr/share/doc/${pkgname}/README.TXT" || true
+}

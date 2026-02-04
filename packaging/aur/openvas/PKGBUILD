@@ -1,0 +1,21 @@
+# PKGBUILD skeleton for OpenVAS / GVM (AUR)
+
+pkgname=openvas
+pkgver=22.4.0
+pkgrel=1
+pkgdesc="Open Vulnerability Assessment System (GVM)"
+arch=('x86_64')
+url="https://www.greenbone.net/"
+license=('GPL')
+depends=('postgresql' 'redis' 'gnutls' 'glib' 'gmp')
+makedepends=('cmake' 'git' 'go' 'python')
+source=("https://example.org/openvas-${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  echo "Complex build - implement compilation steps for GVM components"
+}
+
+package() {
+  echo "Install binaries and service files"
+}
