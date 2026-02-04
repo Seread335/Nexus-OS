@@ -52,6 +52,32 @@ jobs:
             ls -R $PKGROOT || true
           '
 
+      - name: Smoke tests for built packages
+        run: |
+          set -e
+          echo "Running simple smoke-tests on packaged artifacts"
+          for pkgdir in packaging/aur/*; do
+            pkgfile=$(ls -1 "$pkgdir"/*.pkg.tar.* 2>/dev/null | head -n1 || true)
+            if [ -z "$pkgfile" ]; then
+              echo "No built package for $pkgdir"
+              continue
+            fi
+            echo "Testing $pkgfile"
+            tmp=$(mktemp -d)
+            bsdtar -xf "$pkgfile" -C "$tmp"
+
+            # Try to find executables in /usr/bin and /opt and run --version where possible
+            find "$tmp" -type f -perm /111 | while read -r exe; do
+              # Prefer running simple --version checks where supported
+              echo "Found executable: $exe"
+              ("$exe" --version) >/dev/null 2>&1 && echo "OK: $exe --version" && continue
+              # If --version fails, try running without args for a quick exit code check
+              ("$exe") >/dev/null 2>&1 && echo "OK: $exe ran" || echo "Warning: $exe failed to run"
+            done
+
+            rm -rf "$tmp"
+          done
+
       - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:

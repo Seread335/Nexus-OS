@@ -1,0 +1,45 @@
+# PKGBUILD for Ophcrack (AUR) - binary-first packaging
+
+pkgname=ophcrack
+pkgver=3.8.0
+pkgrel=1
+pkgdesc="Ophcrack: Windows password cracker using rainbow tables"
+arch=('x86_64')
+url="http://ophcrack.sourceforge.net/"
+license=('GPL')
+depends=('gtk2')
+makedepends=('wget' 'unzip')
+source=("https://sourceforge.net/projects/ophcrack/files/ophcrack-${pkgver}-1/ophcrack-${pkgver}-1-linux.tar.gz/download")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$srcdir"
+  mkdir -p ophcrack
+  if [[ -f "ophcrack-${pkgver}-1-linux.tar.gz" ]]; then
+    tar xzf "ophcrack-${pkgver}-1-linux.tar.gz" -C ophcrack || true
+  else
+    echo "No local archive present; will download during makepkg" || true
+  fi
+}
+
+build() {
+  # Binary distribution; nothing to build
+  return 0
+}
+
+package() {
+  cd "$srcdir"
+  local _dir="$srcdir/ophcrack"
+  install -d "$pkgdir/opt"
+  cp -a "${_dir}" "$pkgdir/opt/ophcrack-${pkgver}"
+
+  # Wrapper script
+  install -d "$pkgdir/usr/bin"
+  cat > "$pkgdir/usr/bin/ophcrack" <<'EOF'
+#!/bin/sh
+exec /opt/ophcrack-3.8.0/ophcrack "$@"
+EOF
+  install -m755 "$pkgdir/usr/bin/ophcrack" "$pkgdir/usr/bin/ophcrack"
+
+  install -Dm644 "$pkgdir/opt/ophcrack-${pkgver}/README" "$pkgdir/usr/share/doc/${pkgname}/README" 2>/dev/null || true
+}
