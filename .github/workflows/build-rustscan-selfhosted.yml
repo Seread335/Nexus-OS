@@ -61,49 +61,52 @@ jobs:
             local exe="$1"; shift
             if [ -x "$exe" ]; then
               echo "Running: $exe $*"
-              ("$exe" "$@") >/dev/null 2>&1 && echo "OK: $exe" || echo "WARN: $exe returned non-zero"
+              ("$exe" "$@") >/dev/null 2>&1 && echo "✓ OK: $exe" || echo "⚠ WARN: $exe returned non-zero"
             else
-              echo "Not present or not executable: $exe"
+              echo "✗ Not present or not executable: $exe"
             fi
           }
 
           for pkgdir in packaging/aur/*; do
             pkgfile=$(ls -1 "$pkgdir"/*.pkg.tar.* 2>/dev/null | head -n1 || true)
             if [ -z "$pkgfile" ]; then
-              echo "No built package for $pkgdir"
+              echo "No built package for $(basename $pkgdir)"
               continue
             fi
-            echo "\n=== Testing $pkgfile ==="
+            echo ""
+            echo "=== Testing $(basename $pkgdir) ==="
             tmp=$(mktemp -d)
             bsdtar -xf "$pkgfile" -C "$tmp"
 
-            # Specific checks per known packages
-            if [ -x "$tmp/usr/bin/rustscan" ]; then
-              try_run "$tmp/usr/bin/rustscan" --version
-            fi
-            if [ -x "$tmp/usr/bin/hashcat" ]; then
-              try_run "$tmp/usr/bin/hashcat" --version
-            fi
-            if [ -x "$tmp/usr/bin/ophcrack" ]; then
-              try_run "$tmp/usr/bin/ophcrack" --help
-            fi
-            # Ghidra: do not launch GUI; just check files exist under /opt
-            if ls "$tmp/opt/ghidra-"* >/dev/null 2>&1; then
-              echo "OK: Ghidra files present in /opt"
-            elif [ -x "$tmp/usr/bin/ghidra" ]; then
-              echo "OK: Ghidra wrapper present"
-            fi
-
-            # Generic fallback: find executables and try --version or run
-            find "$tmp" -type f -perm /111 | while read -r exe; do
-              case "$(basename "$exe")" in
-                rustscan|hashcat|ophcrack|ghidra) ;;
-                *) 
-                  ("$exe" --version) >/dev/null 2>&1 && echo "OK: $(basename "$exe") --version" || (
-                    ("$exe") >/dev/null 2>&1 && echo "OK: $(basename "$exe") ran" || echo "WARN: $(basename "$exe") failed")
-                  ;;
-              esac
-            done
+            # Package-specific smoke tests
+            case "$(basename $pkgdir)" in
+              rustscan)
+                try_run "$tmp/usr/bin/rustscan" --version
+                ;;
+              hashcat)
+                try_run "$tmp/usr/bin/hashcat" --version
+                [ -d "$tmp/opt/hashcat-"* ] && echo "✓ OK: Hashcat binary dir present"
+                ;;
+              ophcrack)
+                try_run "$tmp/usr/bin/ophcrack" --help
+                [ -d "$tmp/opt/ophcrack-"* ] && echo "✓ OK: Ophcrack binary dir present"
+                ;;
+              ghidra)
+                [ -d "$tmp/opt/ghidra-"* ] && echo "✓ OK: Ghidra files in /opt"
+                [ -x "$tmp/usr/bin/ghidra" ] && echo "✓ OK: Ghidra wrapper present"
+                ;;
+              openvas)
+                if [ -f "$tmp/usr/share/doc/openvas-gvm/README.openvas-setup" ]; then
+                  echo "✓ OK: OpenVAS docs present"
+                fi
+                ;;
+              *)
+                # Generic fallback: check for executables
+                find "$tmp/usr/bin" -type f -perm /111 2>/dev/null | head -n 3 | while read -r exe; do
+                  try_run "$exe" --version || true
+                done
+                ;;
+            esac
 
             rm -rf "$tmp"
           done

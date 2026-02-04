@@ -1,21 +1,80 @@
-# PKGBUILD skeleton for OpenVAS / GVM (AUR)
+# PKGBUILD for OpenVAS/GVM (AUR) - split into components
 
-pkgname=openvas
+# This provides gvm-libs (base libraries); gvmd, openvas-scanner, and gsa (web UI) 
+# can be split into separate -bin pkgbuilds or built together if preferred.
+
+pkgname=openvas-gvm
 pkgver=22.4.0
 pkgrel=1
-pkgdesc="Open Vulnerability Assessment System (GVM)"
+pkgdesc="Greenbone Vulnerability Manager (OpenVAS) - comprehensive component"
 arch=('x86_64')
 url="https://www.greenbone.net/"
 license=('GPL')
-depends=('postgresql' 'redis' 'gnutls' 'glib' 'gmp')
-makedepends=('cmake' 'git' 'go' 'python')
-source=("https://example.org/openvas-${pkgver}.tar.gz")
+depends=(
+  'postgresql'  # database backend
+  'redis'       # caching
+  'gnutls'      # TLS/SSL
+  'glib'        # base lib
+  'gmp'         # arbitrary precision arithmetic
+  'libssh'      # ssh support
+  'openssl'     # crypto
+  'libxml2'     # XML parsing
+)
+makedepends=(
+  'cmake'
+  'git'
+  'gcc'
+  'make'
+  'pkgconf'
+  'go'          # for some components
+  'python'      # for tools and tests
+  'libgcrypt-devel'
+  'openssl-devel'
+)
+optdepends=(
+  'postgresql: database backend'
+  'redis: caching service'
+  'docker: for containerized scanners'
+)
+
+# NOTE: GVM source repos (split into gvm-libs, gvmd, openvas-scanner, gsa, etc.)
+# This PKGBUILD is a monolithic placeholder. For a production build:
+# - Clone/download each component from https://github.com/greenbone/
+# - Build and install them in order (libs → scanner → gvmd → gsa)
+# - Configure postgres and redis systemd services
+# - Set permissions and ownership for gvm user/group
+
+source=('SKIP')
 sha256sums=('SKIP')
 
+prepare() {
+  echo "Prepare: GVM requires separate clones of gvm-libs, openvas-scanner, gvmd, gsa"
+  echo "This PKGBUILD needs source URLs and detailed prepare() steps."
+}
+
 build() {
-  echo "Complex build - implement compilation steps for GVM components"
+  echo "Build: Each GVM component uses cmake or go build system"
+  echo "Implement per-component build steps (gvm-libs → scanner → gvmd → gsa)"
 }
 
 package() {
-  echo "Install binaries and service files"
+  install -d "$pkgdir/usr/share/doc/$pkgname"
+  cat > "$pkgdir/usr/share/doc/$pkgname/README.openvas-setup" <<'EOF'
+# OpenVAS/GVM Setup (Placeholder)
+
+To complete this PKGBUILD:
+1. Split into separate -lib, -scanner, -gvmd, -gsa packages.
+2. Add download URLs from https://github.com/greenbone/.
+3. Implement build() using cmake for most components.
+4. Create systemd service files for gvmd and gsa.
+5. Set up postgres database and redis service.
+6. Add post-install scripts to initialize the database.
+
+For now, install GVM from official repos or use docker:
+  docker pull greenbone/openvas
+
+Or use the Greenbone Community Edition container.
+EOF
 }
+
+# vim:set ts=2 sw=2 et:
