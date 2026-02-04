@@ -1,80 +1,142 @@
-# PKGBUILD for OpenVAS/GVM (AUR) - split into components
+# PKGBUILD: openvas-bin (Docker wrapper) - short, binary-first AUR helper
+# Installs a small wrapper + systemd unit that runs the official Greenbone/OpenVAS
 
-# This provides gvm-libs (base libraries); gvmd, openvas-scanner, and gsa (web UI) 
-# can be split into separate -bin pkgbuilds or built together if preferred.
-
-pkgname=openvas-gvm
-pkgver=22.4.0
+pkgname=openvas-bin
+pkgver=1.0.0
 pkgrel=1
-pkgdesc="Greenbone Vulnerability Manager (OpenVAS) - comprehensive component"
+pkgdesc="Greenbone OpenVAS (Container wrapper) - runs Greenbone Community container as a service"
 arch=('x86_64')
 url="https://www.greenbone.net/"
 license=('GPL')
-depends=(
-  'postgresql'  # database backend
-  'redis'       # caching
-  'gnutls'      # TLS/SSL
-  'glib'        # base lib
-  'gmp'         # arbitrary precision arithmetic
-  'libssh'      # ssh support
-  'openssl'     # crypto
-  'libxml2'     # XML parsing
-)
+# container runtime is optional: this package works with Docker or Podman
+depends=()
 makedepends=(
-  'cmake'
-  'git'
-  'gcc'
-  'make'
-  'pkgconf'
-  'go'          # for some components
-  'python'      # for tools and tests
-  'libgcrypt-devel'
-  'openssl-devel'
+  'bash'
 )
 optdepends=(
-  'postgresql: database backend'
-  'redis: caching service'
-  'docker: for containerized scanners'
+  'docker: Docker runtime'
+  'podman: Podman runtime (rootless)'
 )
+provides=('openvas')
+conflicts=('openvas-gvm')
 
-# NOTE: GVM source repos (split into gvm-libs, gvmd, openvas-scanner, gsa, etc.)
-# This PKGBUILD is a monolithic placeholder. For a production build:
-# - Clone/download each component from https://github.com/greenbone/
-# - Build and install them in order (libs → scanner → gvmd → gsa)
-# - Configure postgres and redis systemd services
-# - Set permissions and ownership for gvm user/group
+# This is a binary-first package: no source build of GVM is attempted here.
+# It installs a control wrapper (`openvasctl`), a systemd unit (`openvas.service`)
+# and documentation explaining how to use or convert to a source-based install.
 
 source=('SKIP')
 sha256sums=('SKIP')
 
 prepare() {
-  echo "Prepare: GVM requires separate clones of gvm-libs, openvas-scanner, gvmd, gsa"
-  echo "This PKGBUILD needs source URLs and detailed prepare() steps."
+  : # no-op - using Docker image
 }
 
 build() {
-  echo "Build: Each GVM component uses cmake or go build system"
-  echo "Implement per-component build steps (gvm-libs → scanner → gvmd → gsa)"
+  : # nothing to compile
 }
 
 package() {
-  install -d "$pkgdir/usr/share/doc/$pkgname"
-  cat > "$pkgdir/usr/share/doc/$pkgname/README.openvas-setup" <<'EOF'
-# OpenVAS/GVM Setup (Placeholder)
+  install -d "$pkgdir/usr/bin" \
+           "$pkgdir/usr/lib/systemd/system" \
+           "$pkgdir/usr/share/doc/$pkgname"
 
-To complete this PKGBUILD:
-1. Split into separate -lib, -scanner, -gvmd, -gsa packages.
-2. Add download URLs from https://github.com/greenbone/.
-3. Implement build() using cmake for most components.
-4. Create systemd service files for gvmd and gsa.
-5. Set up postgres database and redis service.
-6. Add post-install scripts to initialize the database.
+  # Wrapper: openvasctl <start|stop|status|logs>
+  cat > "$pkgdir/usr/bin/openvasctl" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
 
-For now, install GVM from official repos or use docker:
-  docker pull greenbone/openvas
+IMAGE=${OPENVAS_IMAGE:-"greenbone/community:latest"}
+NAME=${OPENVAS_CONTAINER_NAME:-"openvas"}
+DATA_DIR=${OPENVAS_DATA_DIR:-"/var/lib/openvas"}
 
-Or use the Greenbone Community Edition container.
+# Choose runtime: docker preferred, fall back to podman
+if command -v docker >/dev/null 2>&1; then
+  RUNTIME=docker
+elif command -v podman >/dev/null 2>&1; then
+  RUNTIME=podman
+else
+  echo "No supported container runtime found (docker or podman). Install one and retry."
+  exit 1
+fi
+
+cmd=${1:-}
+case "$cmd" in
+  start)
+    mkdir -p "$DATA_DIR"
+    $RUNTIME pull "$IMAGE" || true
+    # Run container (works for docker and podman)
+    $RUNTIME run -d --name "$NAME" \
+      -p 443:443 -p 9390:9390 -p 8080:8080 \
+      -v "$DATA_DIR":/data \
+      --restart unless-stopped \
+      "$IMAGE"
+    ;;
+  stop)
+    $RUNTIME stop "$NAME" || true
+    ;;
+  status)
+    $RUNTIME ps --filter "name=^/${NAME}$" --format "{{.Status}}" || echo "not running"
+    ;;
+  logs)
+    $RUNTIME logs -f "$NAME"
+    ;;
+  exec)
+    shift || true
+    $RUNTIME exec -it "$NAME" "$@"
+    ;;
+  *)
+    echo "usage: openvasctl {start|stop|status|logs|exec <cmd>}"
+    exit 2
+    ;;
+esac
 EOF
+  chmod 755 "$pkgdir/usr/bin/openvasctl"
+
+  # systemd unit that delegates to openvasctl
+  cat > "$pkgdir/usr/lib/systemd/system/openvas.service" <<'EOF'
+[Unit]
+Description=OpenVAS (Greenbone) container service
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/openvasctl start
+ExecStop=/usr/bin/openvasctl stop
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  # Documentation and quick-start
+  cat > "$pkgdir/usr/share/doc/$pkgname/README.openvas" <<'EOF'
+OpenVAS (Greenbone) - Docker wrapper package
+
+Quick start:
+  # Install the package (pacman -U ...) then:
+  sudo systemctl enable --now openvas.service
+  sudo openvasctl status
+  sudo openvasctl logs
+
+Notes & best practices:
+1) This package uses the official Greenbone Community image (default: greenbone/community:latest).
+   You can override image via OPENVAS_IMAGE env var when running the wrapper.
+2) For persistent data, the wrapper mounts /var/lib/openvas on the host to /data in the container.
+   You can change OPENVAS_DATA_DIR to point to a preferred host directory.
+3) If you need a native install (no Docker), consider splitting into packages:
+   - gvm-libs, openvas-scanner, gvmd, gsa (requires postgres, redis, cmake, python, systemd units).
+   This gives more control but is significantly more complex and maintenance-heavy.
+4) To embed OpenVAS into an ISO, include `docker` in the image and enable `openvas.service`.
+
+Testing locally (no systemd):
+  OPENVAS_IMAGE=greenbone/community:latest OPENVAS_DATA_DIR=/tmp/openvas-data openvasctl start
+  openvasctl logs
+  OPENVAS_DATA_DIR=/tmp/openvas-data openvasctl stop
+
+EOF
+
+  install -m644 "$pkgdir/usr/share/doc/$pkgname/README.openvas" "$pkgdir/usr/share/doc/$pkgname/"
 }
 
 # vim:set ts=2 sw=2 et:
