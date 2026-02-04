@@ -1,0 +1,43 @@
+# PKGBUILD for WPScan (AUR) - WordPress vulnerability scanner
+
+pkgname=wpscan
+pkgver=3.8.22
+pkgrel=1
+pkgdesc="WPScan - WordPress vulnerability scanner (Ruby-based)"
+arch=('any')
+url="https://wpscan.com/"
+license=('GPL')
+depends=('ruby' 'ruby-bundler' 'curl')
+makedepends=('git' 'ruby-bundler')
+source=("https://github.com/wpscanteam/wpscan/archive/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$srcdir/wpscan-${pkgver}"
+  # Install dependencies
+  bundle install --deployment || true
+}
+
+build() {
+  cd "$srcdir/wpscan-${pkgver}"
+  # No build step needed for Ruby
+  return 0
+}
+
+package() {
+  cd "$srcdir/wpscan-${pkgver}"
+  install -d "$pkgdir/opt/wpscan-${pkgver}"
+  cp -a . "$pkgdir/opt/wpscan-${pkgver}"
+
+  # Wrapper script
+  install -d "$pkgdir/usr/bin"
+  cat > "$pkgdir/usr/bin/wpscan" <<'EOF'
+#!/bin/sh
+exec /opt/wpscan-3.8.22/wpscan.rb "$@"
+EOF
+  install -m755 "$pkgdir/usr/bin/wpscan" "$pkgdir/usr/bin/wpscan"
+
+  install -Dm644 "$pkgdir/opt/wpscan-${pkgver}/README.md" "$pkgdir/usr/share/doc/${pkgname}/README.md" 2>/dev/null || true
+}
+
+# vim:set ts=2 sw=2 et:

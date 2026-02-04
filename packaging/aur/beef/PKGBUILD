@@ -1,0 +1,43 @@
+# PKGBUILD for BeEF (Browser Exploitation Framework) (AUR)
+
+pkgname=beef
+pkgver=1.0.7
+pkgrel=1
+pkgdesc="BeEF - Browser Exploitation Framework (Ruby-based)"
+arch=('any')
+url="https://beefproject.com/"
+license=('GPL')
+depends=('ruby' 'sqlite' 'curl' 'openssl')
+makedepends=('git' 'ruby-bundler' 'bundler')
+source=("https://github.com/beefproject/beef/archive/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$srcdir/beef-${pkgver}"
+  # Install Ruby dependencies
+  bundle install --deployment 2>/dev/null || true
+}
+
+build() {
+  cd "$srcdir/beef-${pkgver}"
+  # Ruby framework; no compilation needed
+  return 0
+}
+
+package() {
+  cd "$srcdir/beef-${pkgver}"
+  install -d "$pkgdir/opt/beef-${pkgver}"
+  cp -a . "$pkgdir/opt/beef-${pkgver}"
+
+  # Wrapper script
+  install -d "$pkgdir/usr/bin"
+  cat > "$pkgdir/usr/bin/beef" <<'EOF'
+#!/bin/sh
+exec ruby /opt/beef-1.0.7/beef "$@"
+EOF
+  install -m755 "$pkgdir/usr/bin/beef" "$pkgdir/usr/bin/beef"
+
+  install -Dm644 "$pkgdir/opt/beef-${pkgver}/README.md" "$pkgdir/usr/share/doc/${pkgname}/README.md" 2>/dev/null || true
+}
+
+# vim:set ts=2 sw=2 et:

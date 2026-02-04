@@ -1,0 +1,50 @@
+# PKGBUILD for Bettercap (AUR) - MITM attack framework
+
+pkgname=bettercap
+pkgver=1.6.2
+pkgrel=1
+pkgdesc="Bettercap - MITM attack and network monitoring framework"
+arch=('x86_64')
+url="https://www.bettercap.org/"
+license=('GPL')
+depends=('glibc' 'openssl' 'libpcap' 'iptables')
+makedepends=('git' 'go' 'gcc')
+source=("https://github.com/evilsocket/bettercap/releases/download/v${pkgver}/bettercap_linux_amd64.zip")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$srcdir"
+  # Prefer local binary if available
+  if [[ -f "bettercap" ]]; then
+    chmod +x bettercap
+    return 0
+  fi
+  # Try to unzip release asset
+  unzip -q "bettercap_linux_amd64.zip" 2>/dev/null || true
+}
+
+build() {
+  # Binary distribution
+  return 0
+}
+
+package() {
+  cd "$srcdir"
+  install -d "$pkgdir/opt/bettercap-${pkgver}"
+  
+  if [[ -f "bettercap" ]]; then
+    install -Dm755 bettercap "$pkgdir/opt/bettercap-${pkgver}/bettercap"
+  fi
+
+  # Wrapper script
+  install -d "$pkgdir/usr/bin"
+  cat > "$pkgdir/usr/bin/bettercap" <<'EOF'
+#!/bin/sh
+exec /opt/bettercap-1.6.2/bettercap "$@"
+EOF
+  install -m755 "$pkgdir/usr/bin/bettercap" "$pkgdir/usr/bin/bettercap"
+
+  install -Dm644 /dev/null "$pkgdir/usr/share/doc/${pkgname}/LICENSE" 2>/dev/null || true
+}
+
+# vim:set ts=2 sw=2 et:
