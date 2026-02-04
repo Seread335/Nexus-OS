@@ -17,6 +17,19 @@ sha256sums=('SKIP')
 
 prepare() {
   cd "$srcdir"
+
+  # Prefer a local prebuilt artifact if present (useful when running the local build script)
+  if [[ -f "rustscan" ]] || [[ -f "rustscan-${pkgver}-linux-amd64" ]] || [[ -f "rustscan_${pkgver}_amd64.tar.gz" ]]; then
+    echo "Using local prebuilt artifact"
+    if [[ -f "rustscan" ]]; then
+      chmod +x rustscan
+    else
+      tar -xzf "rustscan_${pkgver}_amd64.tar.gz" 2>/dev/null || tar -xzf "rustscan-${pkgver}-linux-amd64" 2>/dev/null || true
+    fi
+    RELEASE_PRESENT=1
+    return 0
+  fi
+
   echo "Trying to fetch prebuilt release asset: ${release_asset}"
   if curl -f -L -o "rustscan-release.tar.gz" "${release_asset}"; then
     echo "Found release asset; extracting"
