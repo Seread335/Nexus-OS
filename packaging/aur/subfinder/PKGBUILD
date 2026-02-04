@@ -1,0 +1,50 @@
+# PKGBUILD for Subfinder (AUR) - subdomain discovery tool
+
+pkgname=subfinder
+pkgver=2.6.0
+pkgrel=1
+pkgdesc="Subfinder - fast passive subdomain enumeration tool (Go-based)"
+arch=('x86_64')
+url="https://github.com/projectdiscovery/subfinder"
+license=('MIT')
+depends=('glibc')
+makedepends=('go')
+source=("https://github.com/projectdiscovery/subfinder/releases/download/v${pkgver}/subfinder_${pkgver}_linux_amd64.zip")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$srcdir"
+  # Prefer local binary if available
+  if [[ -f "subfinder" ]]; then
+    chmod +x subfinder
+    return 0
+  fi
+  # Try to unzip release
+  unzip -q "subfinder_${pkgver}_linux_amd64.zip" 2>/dev/null || true
+}
+
+build() {
+  # Binary distribution
+  return 0
+}
+
+package() {
+  cd "$srcdir"
+  install -d "$pkgdir/opt/subfinder-${pkgver}"
+  
+  if [[ -f "subfinder" ]]; then
+    install -Dm755 subfinder "$pkgdir/opt/subfinder-${pkgver}/subfinder"
+  fi
+
+  # Wrapper script
+  install -d "$pkgdir/usr/bin"
+  cat > "$pkgdir/usr/bin/subfinder" <<'EOF'
+#!/bin/sh
+exec /opt/subfinder-2.6.0/subfinder "$@"
+EOF
+  install -m755 "$pkgdir/usr/bin/subfinder" "$pkgdir/usr/bin/subfinder"
+
+  install -Dm644 /dev/null "$pkgdir/usr/share/doc/${pkgname}/README" 2>/dev/null || true
+}
+
+# vim:set ts=2 sw=2 et:

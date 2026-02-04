@@ -1,0 +1,57 @@
+# PKGBUILD placeholder for Metasploit Framework (AUR)
+
+pkgname=metasploit-framework
+pkgver=6.3.43
+pkgrel=1
+pkgdesc="Metasploit Framework - open-source penetration testing framework (Ruby-based)"
+arch=('any')
+url="https://www.metasploit.com/"
+license=('BSD')
+depends=('ruby' 'postgresql' 'curl' 'openssl')
+makedepends=('git' 'ruby-bundler' 'bundler')
+optdepends=('postgresql: for database backend')
+
+# NOTE: Metasploit is large and requires careful packaging.
+# This PKGBUILD is a skeleton for future development.
+# Real packaging would need:
+# - Clone from github.com/rapid7/metasploit-framework
+# - Bundle all Ruby dependencies
+# - Create database initialization script
+# - Configure postgresql integration
+# - Set up msfconsole entry point
+
+source=('SKIP')
+sha256sums=('SKIP')
+
+prepare() {
+  echo "Metasploit Framework PKGBUILD placeholder"
+  echo "For production: implement full Ruby bundling and DB setup"
+}
+
+build() {
+  echo "No build step needed for Metasploit (Ruby framework)"
+}
+
+package() {
+  install -d "$pkgdir/usr/share/doc/$pkgname"
+  cat > "$pkgdir/usr/share/doc/$pkgname/README.metasploit" <<'EOF'
+# Metasploit Framework Packaging (Placeholder)
+
+To complete this PKGBUILD:
+1. Clone metasploit-framework from https://github.com/rapid7/metasploit-framework
+2. Install all Ruby dependencies via bundler
+3. Set up database initialization scripts (PostgreSQL)
+4. Create msfconsole wrapper script
+5. Configure post-install hooks to initialize DB and user permissions
+
+For now, install Metasploit from:
+- Official Arch: pacman -S metasploit (if available)
+- Docker: docker pull metasploitframework/metasploit-framework
+- Source: git clone https://github.com/rapid7/metasploit-framework
+
+Then initialize database:
+  msfdb init
+EOF
+}
+
+# vim:set ts=2 sw=2 et:

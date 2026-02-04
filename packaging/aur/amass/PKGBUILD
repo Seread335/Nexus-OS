@@ -1,0 +1,52 @@
+# PKGBUILD for Amass (AUR) - network reconnaissance tool
+
+pkgname=amass
+pkgver=4.2.1
+pkgrel=1
+pkgdesc="Amass - network reconnaissance and enumeration tool (Go-based)"
+arch=('x86_64')
+url="https://github.com/OWASP/Amass"
+license=('Apache')
+depends=('glibc')
+makedepends=('go')
+source=("https://github.com/OWASP/Amass/releases/download/v${pkgver}/amass_linux_amd64.zip")
+sha256sums=('SKIP')
+
+prepare() {
+  cd "$srcdir"
+  # Prefer local binary if available
+  if [[ -f "amass" ]]; then
+    chmod +x amass
+    return 0
+  fi
+  # Try to unzip release
+  unzip -q "amass_linux_amd64.zip" 2>/dev/null || true
+}
+
+build() {
+  # Binary distribution
+  return 0
+}
+
+package() {
+  cd "$srcdir"
+  install -d "$pkgdir/opt/amass-${pkgver}"
+  
+  if [[ -f "amass" ]]; then
+    install -Dm755 amass "$pkgdir/opt/amass-${pkgver}/amass"
+  elif [[ -f "amass_linux_amd64/amass" ]]; then
+    install -Dm755 amass_linux_amd64/amass "$pkgdir/opt/amass-${pkgver}/amass"
+  fi
+
+  # Wrapper script
+  install -d "$pkgdir/usr/bin"
+  cat > "$pkgdir/usr/bin/amass" <<'EOF'
+#!/bin/sh
+exec /opt/amass-4.2.1/amass "$@"
+EOF
+  install -m755 "$pkgdir/usr/bin/amass" "$pkgdir/usr/bin/amass"
+
+  install -Dm644 /dev/null "$pkgdir/usr/share/doc/${pkgname}/README" 2>/dev/null || true
+}
+
+# vim:set ts=2 sw=2 et:
