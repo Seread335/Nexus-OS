@@ -92,12 +92,11 @@ esac
 EOF
   chmod 755 "$pkgdir/usr/bin/openvasctl"
 
-  # systemd unit that delegates to openvasctl
+  # systemd unit that delegates to openvasctl (works with docker or podman)
   cat > "$pkgdir/usr/lib/systemd/system/openvas.service" <<'EOF'
 [Unit]
 Description=OpenVAS (Greenbone) container service
-Requires=docker.service
-After=docker.service
+After=network.target
 
 [Service]
 Type=simple
