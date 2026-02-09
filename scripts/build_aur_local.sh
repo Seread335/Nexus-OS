@@ -42,23 +42,10 @@ for pkgdir in packaging/aur/*/; do
   
   if docker run --rm \
     -v "$WORKSPACE:/workspace" \
+    -v "$WORKSPACE/.pacman_cache:/var/cache/pacman/pkg" \
     -w "/workspace/$pkgdir" \
     "$ARCH_IMAGE" \
-    /bin/bash -lc '
-      set -e
-      # Update and install build deps
-      pacman -Sy --noconfirm --needed base-devel git curl wget unzip p7zip 2>&1 | tail -5
-      
-      # Copy local artifacts if present (for binary-first PKGBUILDs)
-      for f in *-linux-amd64 *-amd64.tar.gz *.7z *.zip 2>/dev/null; do
-        [ -f "$f" ] || continue
-        echo "Found local artifact: $f"
-      done
-      
-      # Build package
-      makepkg -f --noconfirm --syncdeps
-      ls -lah *.pkg.tar.* 2>/dev/null || echo "No package artifact created"
-    ' > "$logfile" 2>&1; then
+    bash -c "set -e; pacman -Sy --noconfirm --needed base-devel git curl wget unzip p7zip 2>&1; makepkg -f --noconfirm --syncdeps 2>&1; ls -lah *.pkg.tar.* 2>&1 || echo 'No artifact'" > "$logfile" 2>&1; then
     
     # Move artifacts to output
     pkgfiles=$(ls "$pkgdir"*.pkg.tar.* 2>/dev/null || echo "")
