@@ -40,7 +40,7 @@ package() {
 #!/bin/sh
 exec /opt/amass-4.2.1/amass "$@"
 EOF
-  install -m755 "$pkgdir/usr/bin/amass" "$pkgdir/usr/bin/amass"
+  chmod 755 "$pkgdir/usr/bin/amass"
 
   install -Dm644 /dev/null "$pkgdir/usr/share/doc/${pkgname}/README" 2>/dev/null || true
 }
