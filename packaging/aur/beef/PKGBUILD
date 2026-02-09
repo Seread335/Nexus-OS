@@ -52,7 +52,7 @@ package() {
 #!/bin/sh
 exec ruby /opt/beef-1.0.7/beef "$@"
 EOF
-  install -m755 "$pkgdir/usr/bin/beef" "$pkgdir/usr/bin/beef"
+  chmod 755 "$pkgdir/usr/bin/beef"
 
   install -Dm644 "$pkgdir/opt/beef-${pkgver}/README.md" "$pkgdir/usr/share/doc/${pkgname}/README.md" 2>/dev/null || true
 }
