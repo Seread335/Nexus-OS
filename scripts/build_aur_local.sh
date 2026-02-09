@@ -45,7 +45,7 @@ for pkgdir in packaging/aur/*/; do
     -v "$WORKSPACE/.pacman_cache:/var/cache/pacman/pkg" \
     -w "/workspace/$pkgdir" \
     "$ARCH_IMAGE" \
-    bash -c "set -e; pacman -Sy --noconfirm --needed base-devel git curl wget unzip p7zip 2>&1; makepkg -f --noconfirm --syncdeps 2>&1; ls -lah *.pkg.tar.* 2>&1 || echo 'No artifact'" > "$logfile" 2>&1; then
+    bash -c "pacman -Sy --noconfirm --needed base-devel git curl wget unzip p7zip >/dev/null 2>&1; useradd -m -s /bin/bash builduser 2>/dev/null; echo 'builduser ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers.d/builduser; chmod 440 /etc/sudoers.d/builduser; chown -R builduser:builduser /workspace/$pkgdir 2>/dev/null; su builduser -c 'cd /workspace/$pkgdir && makepkg -f --noconfirm --syncdeps' 2>&1" > "$logfile" 2>&1; then
     
     # Move artifacts to output
     pkgfiles=$(ls "$pkgdir"*.pkg.tar.* 2>/dev/null || echo "")
