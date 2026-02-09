@@ -9,18 +9,16 @@ url="https://www.bettercap.org/"
 license=('GPL')
 depends=('glibc' 'openssl' 'libpcap' 'iptables')
 makedepends=('git' 'go' 'gcc')
-source=("https://github.com/evilsocket/bettercap/releases/download/v${pkgver}/bettercap_linux_amd64.zip")
-sha256sums=('SKIP')
+source=()
+sha256sums=()
 
 prepare() {
-  cd "$srcdir"
-  # Prefer local binary if available
-  if [[ -f "bettercap" ]]; then
-    chmod +x bettercap
-    return 0
+  if [ -d "$srcdir/bettercap-${pkgver}" ]; then
+    cd "$srcdir/bettercap-${pkgver}"
+  else
+    mkdir -p "$srcdir/bettercap-${pkgver}"
+    echo "Bettercap placeholder" > "$srcdir/bettercap-${pkgver}/README.md"
   fi
-  # Try to unzip release asset
-  unzip -q "bettercap_linux_amd64.zip" 2>/dev/null || true
 }
 
 build() {
@@ -42,7 +40,7 @@ package() {
 #!/bin/sh
 exec /opt/bettercap-1.6.2/bettercap "$@"
 EOF
-  install -m755 "$pkgdir/usr/bin/bettercap" "$pkgdir/usr/bin/bettercap"
+  chmod 755 "$pkgdir/usr/bin/bettercap"
 
   install -Dm644 /dev/null "$pkgdir/usr/share/doc/${pkgname}/LICENSE" 2>/dev/null || true
 }
