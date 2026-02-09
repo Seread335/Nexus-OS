@@ -13,7 +13,6 @@ source=()
 sha256sums=()
 
 prepare() {
-  cd "$srcdir/beef-${pkgver}"
   if [ -d "$srcdir/beef-${pkgver}" ]; then
     cd "$srcdir/beef-${pkgver}"
     echo "BeEF: building from source in $srcdir/beef-${pkgver}"
