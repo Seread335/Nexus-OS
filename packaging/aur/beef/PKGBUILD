@@ -8,13 +8,14 @@ arch=('any')
 url="https://beefproject.com/"
 license=('GPL')
 depends=('ruby' 'sqlite' 'curl' 'openssl')
-makedepends=('git' 'ruby-bundler' 'bundler')
+makedepends=('git' 'rubygems')
 source=("https://github.com/beefproject/beef/archive/v${pkgver}.tar.gz")
 sha256sums=('SKIP')
 
 prepare() {
   cd "$srcdir/beef-${pkgver}"
-  # Install Ruby dependencies
+  # Ensure bundler is available then install Ruby dependencies
+  gem install bundler --no-document || true
   bundle install --deployment 2>/dev/null || true
 }
 
