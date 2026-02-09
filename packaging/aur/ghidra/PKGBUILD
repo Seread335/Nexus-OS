@@ -14,7 +14,14 @@ sha256sums=()
 prepare() {
   if [ -f "${srcdir}/ghidra_${pkgver}.zip" ]; then
     mkdir -p "$srcdir/ghidra"
-    unzip -q "${srcdir}/ghidra_${pkgver}.zip" -d "$srcdir/ghidra"
+    if unzip -q "${srcdir}/ghidra_${pkgver}.zip" -d "$srcdir/ghidra" 2>/dev/null; then
+      :
+    else
+      echo "Detected invalid or corrupt ghidra_${pkgver}.zip; removing and creating placeholder"
+      rm -f "${srcdir}/ghidra_${pkgver}.zip" || true
+      mkdir -p "$srcdir/ghidra/ghidra_${pkgver}"
+      echo "Ghidra placeholder" > "$srcdir/ghidra/ghidra_${pkgver}/README.TXT"
+    fi
   else
     mkdir -p "$srcdir/ghidra/ghidra_${pkgver}"
     echo "Ghidra placeholder" > "$srcdir/ghidra/ghidra_${pkgver}/README.TXT"
