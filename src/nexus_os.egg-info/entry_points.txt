@@ -1,0 +1,3 @@
+[console_scripts]
+cerberus = cerberus.cerberus:main
+nexus-recon = cli.nexus_recon:main

@@ -1,0 +1,76 @@
+# OpenAPI 3.0 snippet — Cerberus API (Nexus OS)
+# Base URL: http://127.0.0.1:9380 (localhost only)
+
+openapi: 3.0.3
+info:
+  title: Cerberus API
+  description: AI Security Agent for Nexus OS. Localhost only.
+  version: 0.1.0
+servers:
+  - url: http://127.0.0.1:9380
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [health]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  service: { type: string, example: cerberus }
+                  onnx_loaded: { type: boolean }
+                  deep_access: { type: boolean }
+  /api/context:
+    get:
+      summary: Get system context snapshot (policy-limited)
+      tags: [api]
+      responses:
+        "200":
+          description: Context text and length
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  context: { type: string }
+                  length: { type: integer }
+        "403":
+          description: deep_system_access disabled or non-localhost
+        "500":
+          description: Context build failed
+  /api/ask:
+    post:
+      summary: Ask LLM (Ollama) with optional system context
+      tags: [api]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt: { type: string }
+                include_context: { type: boolean, default: false }
+      responses:
+        "200":
+          description: LLM response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response: { type: string }
+        "400":
+          description: Invalid request (code: invalid_request)
+        "503":
+          description: Ollama disabled or unreachable (code: ollama_disabled | ollama_unreachable)
+        "504":
+          description: Timeout (code: timeout)
+        "500":
+          description: Internal error (code: internal_error)

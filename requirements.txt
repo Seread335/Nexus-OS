@@ -1,0 +1,4 @@
+# Nexus OS — Python deps for Cerberus + nexus-recon (dev/install)
+# Pinned for reproducibility; bump as needed.
+pyyaml>=6.0.1,<7
+onnxruntime>=1.14.0,<2; sys_platform != 'win32'

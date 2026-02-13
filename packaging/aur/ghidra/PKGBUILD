@@ -1,57 +1,43 @@
-# PKGBUILD for Ghidra (AUR)
+# PKGBUILD for Ghidra (Nexus OS verified)
+# Maintainer: Nexus OS Team
 
 pkgname=ghidra
-pkgver=10.2.2
+pkgver=11.0.1
+_pkgdate=20240130
 pkgrel=1
 pkgdesc="Ghidra Reverse Engineering Framework (binary distribution)"
 arch=('x86_64')
 url="https://ghidra-sre.org/"
-license=('GPL')
-depends=('jdk-openjdk')
-source=()
-sha256sums=()
-
-prepare() {
-  if [ -f "${srcdir}/ghidra_${pkgver}.zip" ]; then
-    mkdir -p "$srcdir/ghidra"
-    if unzip -q "${srcdir}/ghidra_${pkgver}.zip" -d "$srcdir/ghidra" 2>/dev/null; then
-      :
-    else
-      echo "Detected invalid or corrupt ghidra_${pkgver}.zip; removing and creating placeholder"
-      rm -f "${srcdir}/ghidra_${pkgver}.zip" || true
-      mkdir -p "$srcdir/ghidra/ghidra_${pkgver}"
-      echo "Ghidra placeholder" > "$srcdir/ghidra/ghidra_${pkgver}/README.TXT"
-    fi
-  else
-    mkdir -p "$srcdir/ghidra/ghidra_${pkgver}"
-    echo "Ghidra placeholder" > "$srcdir/ghidra/ghidra_${pkgver}/README.TXT"
-  fi
-}
-
-build() {
-  # No compile step; packaged as binary
-  return 0
-}
+license=('Apache')
+depends=('jdk-openjdk>=17')
+options=('!strip')
+source=("https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_${pkgver}_build/ghidra_${pkgver}_PUBLIC_${_pkgdate}.zip")
+sha256sums=('af43e8cfb2fa4490cf6020c3a2bde25c159d83f45236a0542688a024e8fc1941')
 
 package() {
-  local _dir="$srcdir/ghidra/ghidra_${pkgver}"
-
-  # Install into /opt to avoid collisions and keep versioned path
-  install -d "$pkgdir/opt"
-  cp -a "${_dir}" "$pkgdir/opt/ghidra-${pkgver}"
-
-  # Small wrapper to invoke the packaged ghidraRun
-  install -d "$pkgdir/usr/bin"
-  cat > "$pkgdir/usr/bin/ghidra" <<'EOF'
-#!/bin/sh
-exec /opt/ghidra-${pkgver}/ghidraRun "$@"
+  local _dirname="ghidra_${pkgver}_PUBLIC"
+  
+  install -d "${pkgdir}/opt"
+  cp -a "${srcdir}/${_dirname}" "${pkgdir}/opt/ghidra"
+  
+  # Wrapper
+  install -d "${pkgdir}/usr/bin"
+  cat > "${pkgdir}/usr/bin/ghidra" <<EOF
+#!/bin/bash
+exec /opt/ghidra/ghidraRun "\$@"
 EOF
-  chmod 755 "$pkgdir/usr/bin/ghidra"
-
-  if [ -f "${_dir}/LICENSE" ]; then
-    install -Dm644 "${_dir}/LICENSE" "$pkgdir/usr/share/licenses/${pkgname}/LICENSE"
-  fi
-  if [ -f "${_dir}/README.TXT" ]; then
-    install -Dm644 "${_dir}/README.TXT" "$pkgdir/usr/share/doc/${pkgname}/README.TXT" || true
-  fi
+  chmod 755 "${pkgdir}/usr/bin/ghidra"
+  
+  # Desktop file (optional but good for "Monster" UX)
+  install -d "${pkgdir}/usr/share/applications"
+  cat > "${pkgdir}/usr/share/applications/ghidra.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Ghidra
+Comment=Software Reverse Engineering Framework
+Icon=/opt/ghidra/support/ghidra.ico
+Exec=/usr/bin/ghidra
+Terminal=false
+Categories=Development;Security;
+EOF
 }

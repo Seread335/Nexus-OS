@@ -1,0 +1,34 @@
+# Build artifacts
+build_output/
+*.pkg.tar.zst
+*.pkg.tar.xz
+*.iso
+
+# Pacman cache
+.pacman_cache/
+
+# AUR package builds
+packaging/aur/*/src/
+packaging/aur/*/pkg/
+packaging/aur/*/*.log
+packaging/aur/*/*.tar.gz
+packaging/aur/*/*.zip
+packaging/aur/*/bettercap
+packaging/aur/*/beef
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# AI models (large files)
+models/active/*
+!models/active/.gitkeep
+models/archives/*
+!models/archives/.gitkeep
+*.onnx
+*.gguf
+*.bin
+
+# OS specific
+.DS_Store
+Thumbs.db

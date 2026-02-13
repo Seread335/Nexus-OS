@@ -1,48 +1,22 @@
-# PKGBUILD for Bettercap (AUR) - MITM attack framework
+# PKGBUILD for Bettercap (Binary Release)
+# Maintainer: Nexus OS Team
 
 pkgname=bettercap
-pkgver=1.6.2
+pkgver=2.41.5
 pkgrel=1
-pkgdesc="Bettercap - MITM attack and network monitoring framework"
+pkgdesc="Bettercap - Swiss Army Knife for Network Attacks and Monitoring"
 arch=('x86_64')
 url="https://www.bettercap.org/"
-license=('GPL')
-depends=('glibc' 'openssl' 'libpcap' 'iptables')
-makedepends=('git' 'go' 'gcc')
-source=()
-sha256sums=()
-
-prepare() {
-  if [ -d "$srcdir/bettercap-${pkgver}" ]; then
-    cd "$srcdir/bettercap-${pkgver}"
-  else
-    mkdir -p "$srcdir/bettercap-${pkgver}"
-    echo "Bettercap placeholder" > "$srcdir/bettercap-${pkgver}/README.md"
-  fi
-}
-
-build() {
-  # Binary distribution
-  return 0
-}
+license=('GPL3')
+depends=('libpcap' 'libusb' 'net-tools' 'iproute2')
+options=('!strip')
+source=("${pkgname}_v${pkgver}_linux_amd64.zip::https://github.com/bettercap/bettercap/releases/download/v${pkgver}/bettercap_linux_amd64.zip")
+sha256sums=('563e16919e87e436f0b69d0ad8240595ed76d97ef154ae542933af332359346d')
 
 package() {
-  cd "$srcdir"
-  install -d "$pkgdir/opt/bettercap-${pkgver}"
+  install -d "${pkgdir}/usr/bin"
+  install -m755 "bettercap" "${pkgdir}/usr/bin/bettercap"
   
-  if [[ -f "bettercap" ]]; then
-    install -Dm755 bettercap "$pkgdir/opt/bettercap-${pkgver}/bettercap"
-  fi
-
-  # Wrapper script
-  install -d "$pkgdir/usr/bin"
-  cat > "$pkgdir/usr/bin/bettercap" <<'EOF'
-#!/bin/sh
-exec /opt/bettercap-1.6.2/bettercap "$@"
-EOF
-  chmod 755 "$pkgdir/usr/bin/bettercap"
-
-  install -Dm644 /dev/null "$pkgdir/usr/share/doc/${pkgname}/LICENSE" 2>/dev/null || true
+  # Install UI if included or needed (optional)
+  # install -d "${pkgdir}/usr/share/${pkgname}"
 }
-
-# vim:set ts=2 sw=2 et:

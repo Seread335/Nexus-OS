@@ -1,0 +1,36 @@
+name: QEMU ISO boot smoke test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'externals/archiso/**'
+      - 'scripts/build_iso.sh'
+
+jobs:
+  build-and-boot:
+    # Requires a self-hosted runner that can run mkarchiso and qemu (Arch recommended)
+    runs-on: self-hosted
+    if: "contains(runner.labels, 'iso-builder')"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build ISO
+        run: |
+          chmod +x scripts/build_iso.sh
+          ./scripts/build_iso.sh build_output build_work
+
+      - name: Verify ISO boot with QEMU (headless)
+        run: |
+          chmod +x scripts/verify_iso_qemu.sh
+          # Run in background and time-limit the boot to 3 minutes
+          timeout 180 ./scripts/verify_iso_qemu.sh build_output/*.iso || true
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-iso
+          path: build_output/*.iso
+
+# Note: This workflow expects a self-hosted runner labeled `iso-builder` with mkarchiso and qemu installed.

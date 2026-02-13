@@ -39,14 +39,24 @@ fi
 # Ensure output directory
 mkdir -p "$OUTPUT_DIR"
 
-echo "[1/3] Validating profile structure..."
+# Copy Nexus AI stack (Cerberus + CLI) into airootfs so the live system has /opt/nexus/src
+if [ -d "$ROOT_DIR/src" ]; then
+  echo "[0/4] Embedding Nexus AI stack (src -> airootfs/opt/nexus/src)..."
+  mkdir -p "$PROFILE_DIR/airootfs/opt/nexus"
+  cp -a "$ROOT_DIR/src" "$PROFILE_DIR/airootfs/opt/nexus/"
+  echo "  Done."
+else
+  echo "[0/4] No src/ found; Cerberus will need to be installed separately."
+fi
+
+echo "[1/4] Validating profile structure..."
 for file in profiledef.sh packages.x86_64 airootfs; do
   if [ ! -e "$PROFILE_DIR/$file" ]; then
     echo "Warning: Missing $file in profile (may be optional)"
   fi
 done
 
-echo "[2/3] Building ISO..."
+echo "[2/4] Building ISO..."
 cd "$ARCHISO_DIR" || exit 1
 if sudo mkarchiso -v -w "$WORK_DIR" -o "$OUTPUT_DIR" "$PROFILE_DIR"; then
   echo "ISO build successful"
@@ -55,7 +65,7 @@ else
   exit 1
 fi
 
-echo "[3/3] Finalizing..."
+echo "[3/4] Finalizing..."
 ISO_FILE=$(ls -t "$OUTPUT_DIR"/*.iso 2>/dev/null | head -n1 || echo "")
 if [ -n "$ISO_FILE" ]; then
   SIZE=$(du -h "$ISO_FILE" | cut -f1)

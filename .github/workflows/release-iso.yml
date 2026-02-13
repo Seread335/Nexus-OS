@@ -1,0 +1,45 @@
+name: Release ISO
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  prepare-release:
+    runs-on: self-hosted
+    if: "contains(runner.labels, 'iso-builder')"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare release artifacts (sign + checksum)
+        run: |
+          chmod +x scripts/ci_release_iso.sh
+          scripts/ci_release_iso.sh
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: iso-release
+          path: build_output/release/**
+
+      - name: Create GitHub release (tag)
+        id: create_release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref }}
+
+      - name: Upload release assets to GitHub
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: build_output/release
+          asset_name: "release-artifacts"
+          asset_content_type: application/zip
+
+# This workflow expects a signing key (GPG_PRIVATE_KEY) available to the runner or configured in GPG.

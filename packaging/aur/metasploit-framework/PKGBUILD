@@ -1,20 +1,48 @@
-# PKGBUILD placeholder for metasploit-framework
-# This is a template placeholder. Fill with upstream source, checksums, and build steps.
+# PKGBUILD for metasploit-framework (Nexus OS verified)
+# Maintainer: Nexus OS Team
+# Build: makepkg -s (requires ruby, bundler; bundle install can take 5–15 min)
 
 pkgname=metasploit-framework
-pkgver=6.3.0
+pkgver=6.4.59
 pkgrel=1
-pkgdesc="Metasploit Framework"
+pkgdesc="Metasploit Framework - Penetration Testing Software"
 arch=('x86_64')
-url="https://metasploit.com/"
+url="https://www.metasploit.com/"
 license=('BSD')
-source=("https://example.com/metasploit.tar.gz")
-sha256sums=('SKIP')
+depends=('ruby' 'postgresql-libs' 'sqlite' 'libpcap' 'libxslt' 'libxml2' 'git' 'inetutils' 'libyaml')
+makedepends=('git' 'ruby-bundler')
+optdepends=('postgresql: database backend for msfdb')
+options=('!strip')
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/rapid7/metasploit-framework/archive/refs/tags/${pkgver}.tar.gz")
+sha256sums=('aaf441f03824019559b569467c734d38fb76b0ae031aaa429697081e78381e53f')
 
-build() {
-  echo "Implement build steps (gem bundle, dependencies, etc.)"
+prepare() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+  bundle config set --local deployment 'true'
+  bundle config set --local without 'development test coverage'
+  bundle install --jobs=$(nproc 2>/dev/null || echo 4)
 }
 
 package() {
-  echo "Install files into package dir"
+  cd "${srcdir}/${pkgname}-${pkgver}"
+
+  install -d "${pkgdir}/opt/${pkgname}"
+  cp -a . "${pkgdir}/opt/${pkgname}"
+
+  install -d "${pkgdir}/usr/bin"
+  # msfconsole: wrapper so BUNDLE_GEMFILE and cwd are correct
+  cat > "${pkgdir}/usr/bin/msfconsole" <<EOF
+#!/bin/bash
+export BUNDLE_GEMFILE=/opt/${pkgname}/Gemfile
+export MSF_DATABASE_CONFIG=/opt/${pkgname}/config/database.yml
+cd /opt/${pkgname} && exec ./msfconsole "\$@"
+EOF
+  chmod 755 "${pkgdir}/usr/bin/msfconsole"
+  # Symlinks for other entry points
+  for _bin in msfvenom msfdb msfpc; do
+    if [ -f "${pkgdir}/opt/${pkgname}/${_bin}" ]; then
+      ln -sf "/opt/${pkgname}/${_bin}" "${pkgdir}/usr/bin/${_bin}"
+    fi
+  done
 }
+

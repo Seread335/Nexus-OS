@@ -84,3 +84,10 @@ echo ""
 echo "To install a package:"
 echo "  sudo pacman -U $OUTPUT_DIR/packages/<pkgname>-<version>-<arch>.pkg.tar.*"
 echo ""
+
+# Update Repository
+if [ -f "scripts/create_repo.sh" ]; then
+    echo "Updating local repository..."
+    bash scripts/create_repo.sh "$OUTPUT_DIR/repo" "nexus-core"
+fi
+

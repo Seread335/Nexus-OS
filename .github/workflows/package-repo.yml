@@ -1,0 +1,49 @@
+name: Build and publish packages
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'packaging/aur/**'
+
+jobs:
+  build-packages:
+    # This job MUST run on a self-hosted Arch Linux runner with `base-devel` installed.
+    runs-on: self-hosted
+    if: "contains(runner.labels, 'arch')"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Make CI build script executable
+        run: chmod +x scripts/ci_build_packages.sh
+
+      - name: Build packages (Arch runner)
+        run: |
+          scripts/ci_build_packages.sh
+
+      - name: Upload built packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: aur-packages
+          path: build_output/packages/**
+
+      - name: Publish repo to S3 (optional)
+        if: secrets.AWS_S3_BUCKET
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Sync repo to S3
+        if: secrets.AWS_S3_BUCKET
+        run: |
+          # sync the generated repo/ directory to the configured S3 bucket
+          aws s3 sync build_output/repo s3://${{ secrets.AWS_S3_BUCKET }}/packages/ --acl private --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+
+# NOTE: This workflow expects a self-hosted runner labeled `arch` with pacman/makepkg available.
+# For signing and publishing you can extend this workflow to import a GPG private key from
+# the `GPG_PRIVATE_KEY` secret and upload the repo files to a package host.

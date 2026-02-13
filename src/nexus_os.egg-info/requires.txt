@@ -1,0 +1,8 @@
+pyyaml
+
+[:sys_platform != "win32"]
+onnxruntime
+
+[dev]
+pytest
+ruff

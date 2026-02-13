@@ -1,60 +1,45 @@
-# PKGBUILD for BeEF (Browser Exploitation Framework) (AUR)
+# PKGBUILD for BeEF (Browser Exploitation Framework)
+# Maintainer: Nexus OS Team
 
 pkgname=beef
-pkgver=1.0.7
+pkgver=0.6.0.0
 pkgrel=1
-pkgdesc="BeEF - Browser Exploitation Framework (Ruby-based)"
+pkgdesc="The Browser Exploitation Framework (BeEF)"
 arch=('any')
 url="https://beefproject.com/"
 license=('GPL')
-depends=('ruby' 'sqlite' 'curl' 'openssl')
+depends=('ruby' 'nodejs' 'sqlite')
 makedepends=('git' 'rubygems')
-source=()
-sha256sums=()
+options=('!strip')
+# Pin to specific commit for reproducibility (v0.6.0.0 tag)
+_commit=6f7a319
+source=("git+https://github.com/beefproject/beef.git#commit=${_commit}")
+sha256sums=('SKIP')
 
 prepare() {
-  if [ -d "$srcdir/beef-${pkgver}" ]; then
-    cd "$srcdir/beef-${pkgver}"
-    echo "BeEF: building from source in $srcdir/beef-${pkgver}"
-  else
-    echo "BeEF: source not present. Creating minimal placeholder to allow packaging."
-    mkdir -p "$srcdir/beef-${pkgver}"
-    cat > "$srcdir/beef-${pkgver}/README.md" <<'EOF'
-BeEF placeholder
-
-This package was skipped during automated CI because the upstream release
-archive for v${pkgver} could not be downloaded automatically.
-
-Please update the `PKGBUILD` `source` field to a valid URL or provide local
-source files in the package directory to build BeEF properly.
-EOF
-  fi
-  # Attempt to ensure bundler available (if building real source later)
-  gem install bundler --no-document || true
-  bundle install --deployment 2>/dev/null || true
-  return 0
-}
-
-build() {
-  cd "$srcdir/beef-${pkgver}"
-  # Ruby framework; no compilation needed
-  return 0
+  cd "${srcdir}/beef"
+  # Clean up any potential git leftovers
+  git clean -fdx
+  
+  # Install dependencies into vendor/bundle
+  bundle config set --local deployment 'true'
+  bundle config set --local without 'test development'
+  bundle install
 }
 
 package() {
-  cd "$srcdir/beef-${pkgver}"
-  install -d "$pkgdir/opt/beef-${pkgver}"
-  cp -a . "$pkgdir/opt/beef-${pkgver}"
-
-  # Wrapper script
-  install -d "$pkgdir/usr/bin"
-  cat > "$pkgdir/usr/bin/beef" <<'EOF'
-#!/bin/sh
-exec ruby /opt/beef-1.0.7/beef "$@"
+  cd "${srcdir}/beef"
+  
+  install -d "${pkgdir}/opt/beef"
+  cp -a . "${pkgdir}/opt/beef"
+  
+  # Install launcher script
+  install -d "${pkgdir}/usr/bin"
+  cat > "${pkgdir}/usr/bin/beef" <<EOF
+#!/bin/bash
+cd /opt/beef
+./beef "\$@"
 EOF
-  chmod 755 "$pkgdir/usr/bin/beef"
-
-  install -Dm644 "$pkgdir/opt/beef-${pkgver}/README.md" "$pkgdir/usr/share/doc/${pkgname}/README.md" 2>/dev/null || true
+  chmod 755 "${pkgdir}/usr/bin/beef"
 }
 
-# vim:set ts=2 sw=2 et:

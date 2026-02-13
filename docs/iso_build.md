@@ -26,6 +26,22 @@ cd externals/archiso
 - `externals/archiso/configs/nexus/packages.x86_64` — package list for image
 - `externals/archiso/configs/nexus/airootfs/` — overlay files
 
+## Verify ISO boot (QEMU)
+
+After building, verify the ISO boots:
+
+```bash
+# From repo root (uses first .iso found in build_output if no arg)
+./scripts/verify_iso_qemu.sh
+
+# Or specify ISO path
+./scripts/verify_iso_qemu.sh build_output/nexus-YYYY.MM.DD-x86_64.iso
+```
+
+Requires: `qemu-system-x86_64` (and optionally `edk2-ovmf` for UEFI). On Arch: `pacman -S qemu-base edk2-ovmf`.
+
+**Checklist:** See **docs/ISO_VERIFY_CHECKLIST.md** for full boot + Cerberus + nexus-recon verify steps.
+
 ## Notes
 - Some packages (kernel variants, rustscan, specialized tools) may require AUR or extra repos.
 - Secure Boot and signing is a later step (see ROADMAP M5).

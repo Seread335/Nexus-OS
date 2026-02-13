@@ -1,0 +1,36 @@
+# PKGBUILD for Amass (AUR) - network reconnaissance tool
+# NOTE: v4.2.1 release URL returns 404, temporarily disabled
+# TODO: Verify correct download URL from https://github.com/OWASP/Amass/releases
+# Approximate naming: amass-linux-amd64 (no underscore) or v4.2.1-amass-<arch>.tar.gz
+
+pkgname=amass
+pkgver=4.2.1
+pkgrel=1
+pkgdesc="Amass - network reconnaissance and enumeration tool (Go-based)"
+arch=('x86_64')
+url="https://github.com/OWASP/Amass"
+license=('Apache')
+depends=('glibc')
+makedepends=('go')
+
+# TEMPORARY: Disabled due to 404 download URL
+# Correct URL needs to be verified from https://github.com/OWASP/Amass/releases/tag/v4.2.1
+#source=("https://github.com/OWASP/Amass/releases/download/v${pkgver}/amass_linux_amd64.zip")
+
+source=('SKIP')
+sha256sums=('SKIP')
+
+prepare() {
+  echo "Amass: temporary disabled (download URL 404). Please verify correct URL from GitHub."
+  return 1
+}
+
+build() {
+  return 0
+}
+
+package() {
+  return 0
+}
+
+# vim:set ts=2 sw=2 et:

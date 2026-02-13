@@ -1,31 +1,21 @@
-# PKGBUILD: openvas-bin (Docker wrapper) - short, binary-first AUR helper
-# Installs a small wrapper + systemd unit that runs the official Greenbone/OpenVAS
+# PKGBUILD: openvas (Docker wrapper) - Nexus OS
+# No external source: scripts are inline. Build with: makepkg -s
 
 pkgname=openvas-bin
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="Greenbone OpenVAS (Container wrapper) - runs Greenbone Community container as a service"
+pkgdesc="Greenbone OpenVAS (Docker wrapper) - systemd + openvasctl for Greenbone Community image"
 arch=('x86_64')
 url="https://www.greenbone.net/"
 license=('GPL')
-# container runtime is optional: this package works with Docker or Podman
-depends=()
-makedepends=(
-  'bash'
-)
-optdepends=(
-  'docker: Docker runtime'
-  'podman: Podman runtime (rootless)'
-)
+depends=('bash')
+optdepends=('docker: run OpenVAS container' 'podman: alternative runtime')
 provides=('openvas')
-conflicts=('openvas-gvm')
+conflicts=('openvas-scanner' 'gvm')
 
-# This is a binary-first package: no source build of GVM is attempted here.
-# It installs a control wrapper (`openvasctl`), a systemd unit (`openvas.service`)
-# and documentation explaining how to use or convert to a source-based install.
-
-source=('SKIP')
-sha256sums=('SKIP')
+# Inline scripts only; no tarball
+source=()
+sha256sums=()
 
 prepare() {
   : # no-op - using Docker image
@@ -92,17 +82,17 @@ esac
 EOF
   chmod 755 "$pkgdir/usr/bin/openvasctl"
 
-  # systemd unit that delegates to openvasctl (works with docker or podman)
+  # systemd unit: oneshot so "start" runs once and service stays active
   cat > "$pkgdir/usr/lib/systemd/system/openvas.service" <<'EOF'
 [Unit]
 Description=OpenVAS (Greenbone) container service
 After=network.target
 
 [Service]
-Type=simple
+Type=oneshot
+RemainAfterExit=yes
 ExecStart=/usr/bin/openvasctl start
 ExecStop=/usr/bin/openvasctl stop
-Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target

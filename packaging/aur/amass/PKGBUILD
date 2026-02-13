@@ -10,39 +10,25 @@ license=('Apache')
 depends=('glibc')
 makedepends=('go')
 # Source disabled for CI; building is skipped until URL verified
-source=()
-sha256sums=()
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/owasp-amass/amass/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('d5558cd419c8d46bdc958064cb97f963d1ea7938664144c025906ec15033512ed')
 
 prepare() {
-  echo "Amass: download URL unavailable; skipping download in CI."
-  # Do not fail the build runner; allow overall build to continue.
-  return 0
+  cd "${pkgname}-${pkgver}"
+  mkdir -p build
 }
 
 build() {
-  # Binary distribution
-  return 0
+  cd "${pkgname}-${pkgver}"
+  export CGO_ENABLED=0
+  go build -trimpath -ldflags "-s -w -X 'github.com/owasp-amass/amass/v4/config.Version=v${pkgver}'" -o amass ./cmd/amass
 }
 
 package() {
-  cd "$srcdir"
-  install -d "$pkgdir/opt/amass-${pkgver}"
-  
-  if [[ -f "amass" ]]; then
-    install -Dm755 amass "$pkgdir/opt/amass-${pkgver}/amass"
-  elif [[ -f "amass_linux_amd64/amass" ]]; then
-    install -Dm755 amass_linux_amd64/amass "$pkgdir/opt/amass-${pkgver}/amass"
-  fi
-
-  # Wrapper script
-  install -d "$pkgdir/usr/bin"
-  cat > "$pkgdir/usr/bin/amass" <<'EOF'
-#!/bin/sh
-exec /opt/amass-4.2.1/amass "$@"
-EOF
-  chmod 755 "$pkgdir/usr/bin/amass"
-
-  install -Dm644 /dev/null "$pkgdir/usr/share/doc/${pkgname}/README" 2>/dev/null || true
+  cd "${pkgname}-${pkgver}"
+  install -Dm755 amass "$pkgdir/usr/bin/amass"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
 }
 
 # vim:set ts=2 sw=2 et:

@@ -6,15 +6,17 @@ OUT="$(dirname "$0")/../externals/archiso/configs/nexus/packages.x86_64"
 ROOT="$(cd "$(dirname "$0")" && pwd)/.."
 CONFIGS="$ROOT/externals/archiso/configs/nexus"
 
-# Order: base, system, networking, container, dev, virt, desktop, pentest
+# Order: base, system, networking, container, dev, ai, virt, desktop, pentest, blackarch
 cat "$CONFIGS/packages.base" \
     "$CONFIGS/packages.system" \
     "$CONFIGS/packages.networking" \
     "$CONFIGS/packages.container" \
     "$CONFIGS/packages.dev" \
+    "$CONFIGS/packages.ai" \
     "$CONFIGS/packages.virt" \
     "$CONFIGS/packages.desktop" \
     "$CONFIGS/packages.pentest" \
+    "$CONFIGS/packages.blackarch" \
   > "$OUT"
 
 # Remove comments and duplicate lines while preserving order
